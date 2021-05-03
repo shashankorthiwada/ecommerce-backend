@@ -1,10 +1,11 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
+const { Schema } = mongoose;
 
 const ProductSchema = new Schema({
   name: {
     type: String,
-    required: "Name is Required",
+    required: "name is required",
+    unique: "name should be unique",
   },
   image: {
     type: String,
@@ -23,9 +24,6 @@ const ProductSchema = new Schema({
   },
   offer: {
     type: Array,
-  },
-  quantity: {
-    type: Number,
   },
   description: {
     type: String,
