@@ -28,7 +28,7 @@ router
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: "Error While Saving Products",
+        message: "error while saving products",
         errorMessage: err.message,
       });
     }
