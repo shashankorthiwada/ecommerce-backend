@@ -2,8 +2,6 @@ const express = require("express");
 const router = express.Router();
 const { Product } = require("../models/product.model");
 
-// router.use(bodyParser.json());
-
 router
   .route("/")
   .get(async (req, res) => {
