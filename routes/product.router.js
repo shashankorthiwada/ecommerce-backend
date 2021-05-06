@@ -34,4 +34,23 @@ router
     }
   });
 
+router.param("productId", async (req, res, next, productId) => {
+  try {
+    const product = await Product.findById(productId);
+    if (!product) {
+      throw Error("No Product Found");
+    }
+    req.product = product;
+    next();
+  } catch (err) {
+    res.status(400).json({ success: false, message: "Error Fetching Product" });
+  }
+});
+
+router.route("/:productId").get(async (req, res) => {
+  const { product } = req;
+  product.__v = undefined;
+  res.json({ success: true, product });
+});
+
 module.exports = router;
