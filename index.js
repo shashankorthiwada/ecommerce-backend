@@ -1,4 +1,5 @@
 require("dotenv").config();
+const port = process.env.PORT || 3000;
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -32,6 +33,6 @@ app.get("/", (req, res) => {
 app.use(routeNotFound);
 app.use(errorHandler);
 
-app.listen(3000, () => {
-  console.log("server started");
+app.listen(port, () => {
+  console.log("server started", port);
 });

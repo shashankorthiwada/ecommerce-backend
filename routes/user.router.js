@@ -31,13 +31,15 @@ router.route("/login").post(async (req, res) => {
     } else {
       res.status(401).json({
         success: false,
+        user: null,
         message: "Username and password does not match",
       });
     }
   } else {
     res.status(401).json({
       success: false,
-      message: "Username does not exsist",
+      user: null,
+      message: "Username does not exist",
     });
   }
 });

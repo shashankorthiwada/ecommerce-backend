@@ -17,6 +17,11 @@ const userSchema = new Schema(
       required: "email is required",
       unique: "There is already a user with this mail",
     },
+    phonenumber: {
+      type: Number,
+      required: "phone number is required",
+      unique: "A member with this phone number already exists",
+    },
   },
   {
     timestamps: true,
