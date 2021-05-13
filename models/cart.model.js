@@ -7,6 +7,7 @@ const CartItemSchema = new Schema({
     ref: "Product",
   },
   quantity: Number,
+  active: Boolean
 });
 
 const CartSchema = new Schema({

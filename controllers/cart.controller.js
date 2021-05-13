@@ -1,35 +1,24 @@
 const { Cart } = require("../models/cart.model");
 const { User } = require("../models/user.model");
 
-const getCart = async (req, res, next, userId) => {
+const getCart = async (req, res) => {
   try {
-    let user = await User.findOne({ _id: userId });
-    if (!user) {
-      res.status(404).json({ success: false, message: "user not found" });
-      throw Error("user not found");
-    }
-    let cart = await Cart.findOne({ userId });
-    if (!cart) {
-      cart = new Cart({ userId, products: [] });
-      cart = await cart.save();
-    }
-    req.cart = cart;
-    next();
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: "error fetching cart items",
-      errorMessage: err.message,
-    });
+    const carts = await Cart.find({});
+    res.status(200).json({ success: true, data: carts });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ success: false, data: null, errorMessage: error.message });
   }
 };
 
 const getCartItems = async (cart) => {
+  cart.products = cart.products.filter((product) => product.active);
   cart = await cart
     .populate({
       path: "products._id",
-      select:
-        "name image price brand category inStock fastDelivery rating offer",
+      select: "name image price inStock fastDelivery ratings offer",
     })
     .execPopulate();
   return cart.products.map((product) => {
@@ -79,47 +68,62 @@ const getUserCart = async (req, res) => {
 };
 
 const updateUserCart = async (req, res) => {
-  const { _id, action } = req.body;
-  const { cart } = req;
-  let resStatus;
-  const productExists = cart.products.some((product) => product._id == _id);
-  if (productExists) {
-    resStatus = 200;
-    for (let product of cart.products) {
-      if (product._id == _id) {
-        switch (action.toUpperCase()) {
-          case "ADD":
-            product.quantity = product.quantity + 1;
-            break;
-          case "REMOVE":
-            product.quantity = product.quantity - 1;
-            break;
+  try {
+    const { _id, action } = req.body;
+    const { cart } = req;
+    let resStatus;
+    const productExists = cart.products.some((product) => product._id == _id);
+    if (productExists) {
+      resStatus = 200;
+      for (let product of cart.products) {
+        console.log("product: ", product);
+        if (product._id == _id) {
+          switch (action.toUpperCase()) {
+            case "ADD":
+              product.quantity = product.quantity + 1;
+              break;
+            case "REMOVE":
+              product.quantity = product.quantity - 1;
+              break;
+          }
+          product.quantity > 0
+            ? (product.active = true)
+            : (product.active = false);
+          break;
         }
-        product.quantity > 0
-          ? (product.active = true)
-          : (product.active = false);
-        break;
       }
+    } else {
+      resStatus = 201;
+      cart.products.push({ _id, quantity: 1, active: true });
     }
-  } else {
-    resStatus = 201;
-    cart.products.push({ _id, quantity: 1, active: true });
-  }
 
-  let updatedCart = await cart.save();
-  updatedCart = await getCartItems(updatedCart);
-  res.status(resStatus).json({ success: true, data: updatedCart });
+    let updatedCart = await cart.save();
+    updatedCart = await getCartItems(updatedCart);
+    res.status(resStatus).json({ success: true, data: updatedCart });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ success: false, data: null, errorMessage: error.message });
+  }
 };
 
 const deleteItemFromCart = async (req, res) => {
-  const { cart } = req;
-  const { _id } = req.body;
-  if (cart) {
-    await cart.products.id(_id).remove();
-    await cart.save();
+  try {
+    const { cart } = req;
+    const { _id } = req.body;
+    if (cart) {
+      await cart.products.id(_id).remove();
+      await cart.save();
+      res
+        .status(200)
+        .json({ success: true, message: "Product removed successfully" });
+    }
+  } catch (error) {
+    console.error(error);
     res
-      .status(200)
-      .json({ success: true, message: "Product removed successfully" });
+      .status(500)
+      .json({ success: false, data: null, errorMessage: error.message });
   }
 };
 
