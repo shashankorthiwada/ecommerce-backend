@@ -76,7 +76,6 @@ const updateUserCart = async (req, res) => {
     if (productExists) {
       resStatus = 200;
       for (let product of cart.products) {
-        console.log("product: ", product);
         if (product._id == _id) {
           switch (action.toUpperCase()) {
             case "ADD":

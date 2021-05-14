@@ -56,24 +56,43 @@ const getWishListByUserId = async (req, res) => {
 const updateUserWishList = async (req, res) => {
   const { _id } = req.body;
   const { wishlist } = req;
-  let resStatus;
-  const productExists = wishlist.products.some((product) => product._id == _id);
-  if (productExists) {
-    resStatus = 200;
-    for (let product of wishlist.products) {
-      if (product._id == _id) {
-        product.active = !product.active;
-        break;
-      }
+  try {
+    const productExists = wishlist.products.some(
+      (product) => product._id == _id
+    );
+    if (productExists) {
+      res.status(409).json({
+        success: false,
+        data: null,
+        message: "Item is already there in the wishlist",
+      });
+      throw Error("Item is already there in the wishlist");
+    } else {
+      wishlist.products.push({ _id, active: true });
+      let updatedWishlist = await wishlist.save();
+      let wishlistItems = await getWishlistItems(updatedWishlist);
+      res.status(200).json({ success: true, data: wishlistItems });
     }
-  } else {
-    resStatus = 201;
-    wishlist.products.push({ _id, active: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, errorMessage: error.message });
   }
+};
 
-  let updatedWishlist = await wishlist.save();
-  let wishlistItems = await getWishlistItems(updatedWishlist);
-  res.status(resStatus).json({ success: true, data: wishlistItems });
+const deleteItemFromWishList = async (req, res) => {
+  try {
+    const { wishlist } = req;
+    const { _id } = req.body;
+    if (wishlist) {
+      await wishlist.products.id(_id).remove();
+      await wishlist.save();
+      res
+        .status(200)
+        .json({ success: true, message: "Product removed from wishlist" });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.meesage });
+  }
 };
 
 module.exports = {
@@ -81,4 +100,5 @@ module.exports = {
   fetchUserWishList,
   getWishListByUserId,
   updateUserWishList,
+  deleteItemFromWishList
 };
