@@ -1,5 +1,8 @@
 const { Cart } = require("../models/cart.model");
 const { User } = require("../models/user.model");
+const { verify } = require("jsonwebtoken");
+
+const secret = process.env.secret;
 
 const getCart = async (req, res) => {
   try {
@@ -28,22 +31,46 @@ const getCartItems = async (cart) => {
   });
 };
 
+const verifyUser = (req, userId) => {
+  const token = req?.headers?.authorization;
+  try {
+    if (token) {
+      const decodedValue = verify(token, secret);
+      if (userId === decodedValue._id) {
+        return true;
+      }
+    }
+  } catch (error) {
+    console.log("Error verifying JWT token");
+  }
+  return false;
+};
+
 const findUserCart = async (req, res, next, userId) => {
   try {
-    let user = await User.findOne({ _id: userId });
-    if (!user) {
-      res
-        .status(404)
-        .json({ success: false, data: null, message: "user not found" });
-      throw Error("user not found");
+    if (verifyUser(req, userId)) {
+      let user = await User.findOne({ _id: userId });
+      if (!user) {
+        res
+          .status(404)
+          .json({ success: false, data: null, message: "user not found" });
+        throw Error("user not found");
+      }
+      let cart = await Cart.findOne({ userId });
+      if (!cart) {
+        cart = new Cart({ userId, products: [] });
+        cart = await cart.save();
+      }
+      req.cart = cart;
+      next();
+    } else {
+      res.status(401).json({
+        success: false,
+        data: null,
+        message: "UnAuthorized user or user token expired..",
+      });
+      throw Error("UnAuthorized user or user token expired..");
     }
-    let cart = await Cart.findOne({ userId });
-    if (!cart) {
-      cart = new Cart({ userId, products: [] });
-      cart = await cart.save();
-    }
-    req.cart = cart;
-    next();
   } catch (err) {
     res.status(500).json({
       success: false,

@@ -1,5 +1,10 @@
+require("dotenv").config();
 const { User } = require("../models/user.model");
 const { extend } = require("lodash");
+const { hash, genSalt, compare } = require("bcrypt");
+const { sign } = require("jsonwebtoken");
+
+const secret = process.env.secret;
 
 const getUsers = async (req, res) => {
   try {
@@ -20,17 +25,21 @@ const getUsers = async (req, res) => {
 
 const findUser = async (req, res) => {
   const { username, password } = req.body;
-  const usernameExists = await User.exists({ username });
-  if (usernameExists) {
-    let user = await User.findOne({ username, password });
-    console.log(user);
-    if (user) {
-      res.json({ success: true, user: { _id: user._id, name: user.username } });
+  let user = await User.findOne({ username });
+  if (user) {
+    const validPassword = await compare(password, user.password);
+    if (validPassword) {
+      const token = sign({ _id: user._id }, secret, { expiresIn: "24h" });
+      res.json({
+        success: true,
+        user: { _id: user._id, name: user.username },
+        token,
+      });
     } else {
       res.status(401).json({
         success: false,
         user: null,
-        message: "Username and password does not match",
+        message: "Invalid Password Please Try again",
       });
     }
   } else {
@@ -58,9 +67,13 @@ const registerUser = async (req, res) => {
       return emailExists;
     }
     let newUser = new User(userData);
+    // newUser = await newUser.save();
+    const salt = await genSalt(10);
+    newUser.password = await hash(newUser.password, salt);
     newUser = await newUser.save();
+    const token = sign({ _id: newUser._id }, secret, { expiresIn: "24h" });
     const user = { _id: newUser._id, name: newUser.username };
-    res.status(201).json({ success: true, user });
+    res.status(201).json({ success: true, user, token });
   } catch (err) {
     res.status(500).json({
       success: false,
